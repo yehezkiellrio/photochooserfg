@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FramePick — Photo Selection Gallery</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-deepest: #0A0A0A;
+            --bg-dark: #111111;
+            --bg-card: #1A1A1A;
+            --bg-elevated: #222222;
+            --accent-love: #FF4D6D;
+            --accent-love-glow: rgba(255, 77, 109, 0.3);
+            --accent-gold: #C9A84C;
+            --accent-blue: #4A9EFF;
+            --text-primary: #F5F5F0;
+            --text-secondary: #A0A0A0;
+            --text-muted: #606060;
+            --border: #2A2A2A;
+            --border-bright: #3A3A3A;
+            --radius-lg: 16px;
+            --radius-md: 8px;
+            --radius-sm: 4px;
+        }
+
+        /* Base & Scrollbar */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background-color: var(--bg-deepest); 
+            color: var(--text-primary); 
+            font-family: 'DM Sans', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deepest); }
+        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 10px; }
+
+        /* Typography */
+        h1, h2, .display-font { font-family: 'Bebas Neue', cursive; letter-spacing: 1px; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Components */
+        .btn {
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'DM Sans', sans-serif;
+        }
+        .btn-gold { background: var(--accent-gold); color: black; }
+        .btn-gold:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(201, 168, 76, 0.4); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-bright); color: var(--text-primary); }
+        .btn-outline:hover { background: var(--bg-elevated); }
+        .btn-love { background: var(--accent-love); color: white; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px; }
+        
+        /* Landing Page */
+        #landing-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+        .logo-main { font-size: 5rem; line-height: 1; margin-bottom: 10px; }
+        .logo-main span { color: var(--accent-gold); }
+        .landing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 40px;
+        }
+        .choice-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 40px 20px;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .choice-card:hover { transform: translateY(-10px) scale(1.02); border-color: var(--accent-gold); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .choice-card i { font-size: 40px; display: block; margin-bottom: 15px; }
+
+        /* Admin Mode */
+        #admin-page { max-width: 900px; margin: 0 auto; padding: 40px 20px; display: none; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 500; }
+        input, textarea {
+            width: 100%;
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            padding: 14px;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+        input:focus { outline: none; border-color: var(--accent-gold); }
+        
+        .upload-area {
+            border: 2px dashed var(--border-bright);
+            padding: 60px 20px;
+            text-align: center;
+            border-radius: var(--radius-lg);
+            background: #0d0d0d;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .upload-area.dragover { border-color: var(--accent-gold); background: rgba(201, 168, 76, 0.05); }
+        .thumb-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .thumb-item { position: relative; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: #222; }
+        .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-remove { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.7); border: none; color: white; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 12px; }
+
+        /* Gallery Mode (Client) */
+        #gallery-page { display: none; }
+        .gallery-header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10, 10, 10, 0.9);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            height: 70px; display: flex; align-items: center; padding: 0 24px; justify-content: space-between;
+        }
+        .selection-counter { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--text-secondary); }
+        .selection-counter.full { color: var(--accent-love); font-weight: 700; }
+        .selection-counter.pop { animation: counterPop 0.3s ease; }
+
+        .gallery-content { padding: 20px; }
+        .photo-grid {
+            columns: 4;
+            column-gap: 12px;
+        }
+        .photo-card {
+            break-inside: avoid;
+            margin-bottom: 12px;
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.3s;
+            background: var(--bg-card);
+        }
+        .photo-card img { width: 100%; height: auto; display: block; transition: 0.5s; }
+        .photo-card:hover { transform: scale(1.02); }
+        .photo-card.selected { box-shadow: 0 0 0 4px var(--accent-love); }
+        
+        .card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(transparent 60%, rgba(0,0,0,0.8));
+            opacity: 0; transition: 0.3s;
+            display: flex; align-items: flex-end; justify-content: space-between; padding: 12px;
+        }
+        .photo-card:hover .card-overlay { opacity: 1; }
+        
+        .love-trigger {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(0,0,0,0.5); border: none; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; backdrop-filter: blur(4px);
+            transition: 0.3s;
+        }
+        .love-trigger.active { background: var(--accent-love); transform: scale(1.1); }
+        .photo-card.selected .love-trigger { opacity: 1; background: var(--accent-love); }
+
+        .selection-badge {
+            position: absolute; top: 10px; left: 10px;
+            background: var(--accent-love); color: white;
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.98);
+            z-index: 1000; display: none; align-items: center; justify-content: center;
+            flex-direction: column; padding: 20px;
+        }
+        .lightbox img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+        .lightbox-close { position: absolute; top: 30px; right: 30px; font-size: 30px; color: white; cursor: pointer; }
+        .lightbox-nav { position: absolute; top: 50%; width: 60px; height: 60px; background: rgba(255,255,255,0.05); border: none; color: white; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        .lightbox-prev { left: 20px; }
+        .lightbox-next { right: 20px; }
+
+        /* Floating Button */
+        .fab {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 65px; height: 65px; border-radius: 50%;
+            background: var(--accent-love); border: none; color: white;
+            font-size: 24px; cursor: pointer; z-index: 200;
+            box-shadow: 0 10px 25px var(--accent-love-glow);
+            display: none; transition: 0.3s;
+        }
+        .fab:hover { transform: scale(1.1); }
+        .fab-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: white; color: var(--accent-love);
+            font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 10px;
+        }
+
+        /* Modal / Bottom Sheet */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 1001; display: none; align-items: flex-end;
+        }
+        .bottom-sheet {
+            width: 100%; max-width: 600px; margin: 0 auto;
+            background: var(--bg-card); border-radius: 24px 24px 0 0;
+            padding: 30px; transform: translateY(100%); transition: 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+        .modal-overlay.active .bottom-sheet { transform: translateY(0); }
+
+        /* Animations */
+        @keyframes heartBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.6); } }
+        .animate-love { animation: heartBounce 0.4s ease; }
+        
+        @keyframes counterPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+        
+        @keyframes heartFloat {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+        }
+        .particle-heart { position: fixed; pointer-events: none; z-index: 9999; animation: heartFloat 0.8s ease-out forwards; }
+
+        /* Responsive Grid */
+        @media (max-width: 1024px) { .photo-grid { columns: 3; } }
+        @media (max-width: 768px) { .photo-grid { columns: 2; } .logo-main { font-size: 3.5rem; } }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-elevated); border: 1px solid var(--border-bright);
+            padding: 12px 24px; border-radius: 50px; z-index: 10000;
+            font-size: 14px; font-weight: 500; display: none; animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+        canvas#confetti { position: fixed; inset: 0; pointer-events: none; z-index: 10002; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+    <canvas id="confetti"></canvas>
+
+    <div id="landing-page">
+        <h1 class="logo-main display-font">FRAME<span>PICK</span></h1>
+        <p style="color: var(--text-secondary);">Premium Photo Selection Experience</p>
+        
+        <div class="landing-grid">
+            <div class="choice-card" onclick="openMode('admin')">
+                <i>📷</i>
+                <h3 class="display-font" style="font-size: 1.5rem;">Saya Fotografer</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Buat galeri baru dan kelola pilihan klien.</p>
+                <button class="btn btn-gold" style="margin-top: 20px; width: 100%;">Setup Galeri</button>
+            </div>
+            <div class="choice-card" onclick="showAccessInput()">
+                <i>❤️</i>
+                <h3 class="display-font" style="font-size: 1.5rem;">Saya Klien</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Masukkan kode sesi untuk memilih momen favorit.</p>
+                <div id="access-input-area" style="display: none; margin-top: 20px;">
+                    <input type="text" id="access-code" placeholder="KODE SESI (6 DIGIT)" maxlength="6" style="text-align: center; font-weight: 700; letter-spacing: 4px; border-color: var(--accent-gold);">
+                    <button class="btn btn-love" style="margin-top: 10px; width: 100%;" onclick="accessGallery()">Masuk Galeri</button>
+                </div>
+                <button id="access-btn-initial" class="btn btn-outline" style="margin-top: 20px; width: 100%;">Masuk dengan Kode</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-page">
+        <div class="admin-header">
+            <h2 class="display-font" style="font-size: 2.5rem;">ADMIN <span>PANEL</span></h2>
+            <button class="btn btn-outline" onclick="location.reload()">Keluar</button>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+            <h3 class="display-font" style="margin-bottom: 20px; font-size: 1.5rem; color: var(--accent-gold);">1. Detail Sesi</h3>
+            <div class="form-group">
+                <label>Nama Sesi (Mis: Wedding Budi & Siti)</label>
+                <input type="text" id="session-name" placeholder="Masukkan nama sesi...">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label>Nama Fotografer / Studio</label>
+                    <input type="text" id="fg-name" placeholder="Nama kamu...">
+                </div>
+                <div class="form-group">
+                    <label>No. WA (Gunakan 62...)</label>
+                    <input type="text" id="fg-wa" placeholder="Contoh: 628123456789">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Batas Pilihan Foto (0 = Bebas)</label>
+                <input type="number" id="selection-limit" value="0">
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+            <h3 class="display-font" style="margin-bottom: 20px; font-size: 1.5rem; color: var(--accent-gold);">2. Upload Foto</h3>
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <p>Drag & drop foto di sini, atau klik untuk pilih</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Mendukung JPG, PNG, WEBP</p>
+                <input type="file" id="file-input" multiple accept="image/*" style="display: none;" onchange="handleFiles(this.files)">
+            </div>
+            <div id="upload-status" style="margin-top: 15px; font-size: 13px; color: var(--accent-gold); display: none;">
+                Sedang memproses foto...
+            </div>
+            <div class="thumb-grid" id="admin-thumbs"></div>
+        </div>
+
+        <button class="btn btn-gold" style="width: 100%; height: 60px; font-size: 1.2rem;" onclick="generateSession()">🚀 BUAT SESI SEKARANG</button>
+
+        <div id="active-sessions" style="margin-top: 60px;">
+            <h3 class="display-font" style="margin-bottom: 20px; font-size: 1.8rem;">📋 SESI AKTIF</h3>
+            <div id="sessions-list"></div>
+        </div>
+    </div>
+
+    <div id="gallery-page">
+        <header class="gallery-header">
+            <div>
+                <h2 class="display-font" style="font-size: 1.8rem;">FRAME<span>PICK</span></h2>
+            </div>
+            <div style="text-align: center;">
+                <p id="client-session-title" style="font-weight: 600; font-size: 14px;">Wedding Budi & Siti</p>
+                <p id="client-fg-name" style="font-size: 10px; color: var(--text-muted);">Aura Studio</p>
+            </div>
+            <div class="selection-counter" id="main-counter">❤️ 0 / 0</div>
+        </header>
+
+        <div class="gallery-content">
+            <div class="photo-grid" id="photo-grid"></div>
+        </div>
+
+        <button class="fab" id="fab" onclick="openConfirmation()">
+            ❤️
+            <span class="fab-badge" id="fab-count">0</span>
+        </button>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+        <button class="lightbox-nav lightbox-prev" onclick="navLightbox(-1)">‹</button>
+        <button class="lightbox-nav lightbox-next" onclick="navLightbox(1)">›</button>
+        <img id="lightbox-img" src="" alt="Preview">
+        <div style="margin-top: 20px; display: flex; flex-direction: column; align-items: center;">
+            <p id="lightbox-filename" class="mono" style="font-size: 12px; margin-bottom: 15px; color: var(--text-secondary);"></p>
+            <button class="btn btn-love" id="lightbox-love-btn">❤️ Pilih Foto Ini</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirm-modal" onclick="closeConfirmation()">
+        <div class="bottom-sheet" onclick="event.stopPropagation()">
+            <h3 class="display-font" style="font-size: 2rem; margin-bottom: 20px;">❤️ KONFIRMASI PILIHAN</h3>
+            <div class="form-group">
+                <label>Nama Kamu Siapa? (Wajib)</label>
+                <input type="text" id="client-name" placeholder="Misal: Budi / Siti / Ibu Linda">
+            </div>
+            <div id="selected-list-preview" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; background: #0d0d0d; padding: 10px; border-radius: 8px;">
+                </div>
+            <button class="btn btn-love" style="width: 100%; height: 50px;" onclick="sendToFG()">📱 KIRIM KE FOTOGRAFER VIA WA</button>
+            <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 15px;">Daftar nama file akan otomatis disertakan dalam pesan.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let memoryPhotos = []; // Store base64 photos in memory
+        let currentSesi = null;
+        let selectedPhotos = new Set();
+        let currentLightboxIndex = -1;
+
+        // --- Core Logic ---
+        function openMode(mode) {
+            document.getElementById('landing-page').style.display = 'none';
+            if (mode === 'admin') {
+                document.getElementById('admin-page').style.display = 'block';
+                renderAdminSessions();
+            }
+        }
+
+        function showAccessInput() {
+            document.getElementById('access-btn-initial').style.display = 'none';
+            document.getElementById('access-input-area').style.display = 'block';
+            document.getElementById('access-code').focus();
+        }
+
+        // --- Admin Functions ---
+        async function handleFiles(files) {
+            const status = document.getElementById('upload-status');
+            status.style.display = 'block';
+            
+            for (let file of files) {
+                const base64 = await toBase64(file);
+                memoryPhotos.push({
+                    id: 'f' + Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    src: base64
+                });
+            }
+            
+            status.style.display = 'none';
+            renderAdminThumbs();
+        }
+
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function renderAdminThumbs() {
+            const grid = document.getElementById('admin-thumbs');
+            grid.innerHTML = memoryPhotos.map((p, idx) => `
+                <div class="thumb-item">
+                    <img src="${p.src}">
+                    <button class="thumb-remove" onclick="removePhoto(${idx})">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function removePhoto(idx) {
+            memoryPhotos.splice(idx, 1);
+            renderAdminThumbs();
+        }
+
+        function generateSession() {
+            const name = document.getElementById('session-name').value;
+            const fg = document.getElementById('fg-name').value;
+            const wa = document.getElementById('fg-wa').value;
+            const limit = parseInt(document.getElementById('selection-limit').value);
+
+            if (!name || !fg || !wa || memoryPhotos.length === 0) {
+                showToast("Lengkapi semua data dan upload minimal 1 foto!");
+                return;
+            }
+
+            const code = Math.random().toString(36).substr(2, 6).toUpperCase().replace(/[0O1I]/g, 'K');
+            
+            const sessionData = {
+                code: code,
+                name: name,
+                fg: fg,
+                wa: wa,
+                limit: limit,
+                photoCount: memoryPhotos.length,
+                date: new Date().toISOString()
+            };
+
+            // Metadata in localStorage
+            let sessions = JSON.parse(localStorage.getItem('framepick_sessions') || '[]');
+            sessions.push(sessionData);
+            localStorage.setItem('framepick_sessions', JSON.stringify(sessions));
+
+            // Keep photos in global variable for this session
+            currentSesi = sessionData;
+            
+            const msg = `✅ SESI BERHASIL DIBUAT!\n\nKode Sesi: ${code}\nBagikan kode ini ke klien Anda.`;
+            alert(msg);
+            
+            renderAdminSessions();
+        }
+
+        function renderAdminSessions() {
+            const sessions = JSON.parse(localStorage.getItem('framepick_sessions') || '[]');
+            const list = document.getElementById('sessions-list');
+            list.innerHTML = sessions.map(s => `
+                <div class="card" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h4 style="color: var(--accent-gold);">${s.name}</h4>
+                        <p class="mono" style="font-size: 12px; color: var(--text-muted);">${s.code} · ${s.photoCount} Foto</p>
+                    </div>
+                    <button class="btn btn-outline btn-sm" onclick="deleteSession('${s.code}')">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteSession(code) {
+            let sessions = JSON.parse(localStorage.getItem('framepick_sessions') || '[]');
+            sessions = sessions.filter(s => s.code !== code);
+            localStorage.setItem('framepick_sessions', JSON.stringify(sessions));
+            renderAdminSessions();
+        }
+
+        // --- Client Functions ---
+        function accessGallery() {
+            const code = document.getElementById('access-code').value.toUpperCase();
+            const sessions = JSON.parse(localStorage.getItem('framepick_sessions') || '[]');
+            const found = sessions.find(s => s.code === code);
+
+            if (!found) {
+                showToast("Kode sesi tidak ditemukan!");
+                return;
+            }
+
+            if (memoryPhotos.length === 0) {
+                showToast("Sesi ditemukan, tapi foto belum diupload/hilang dari memori FG.");
+                return;
+            }
+
+            currentSesi = found;
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('gallery-page').style.display = 'block';
+            
+            document.getElementById('client-session-title').innerText = currentSesi.name;
+            document.getElementById('client-fg-name').innerText = currentSesi.fg;
+            
+            renderGallery();
+            updateCounter();
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('photo-grid');
+            grid.innerHTML = memoryPhotos.map((p, idx) => {
+                const isSelected = selectedPhotos.has(p.id);
+                return `
+                    <div class="photo-card ${isSelected ? 'selected' : ''}" id="card-${p.id}" onclick="openLightbox(${idx})">
+                        ${isSelected ? `<div class="selection-badge">${Array.from(selectedPhotos).indexOf(p.id) + 1}</div>` : ''}
+                        <img src="${p.src}" alt="${p.name}" loading="lazy">
+                        <div class="card-overlay">
+                            <span class="mono" style="font-size: 8px;">${p.name}</span>
+                            <button class="love-trigger ${isSelected ? 'active' : ''}" 
+                                    onclick="event.stopPropagation(); toggleLove('${p.id}', event)">
+                                ❤️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLove(id, event) {
+            const card = document.getElementById(`card-${id}`);
+            const trigger = card.querySelector('.love-trigger');
+            
+            if (selectedPhotos.has(id)) {
+                selectedPhotos.delete(id);
+            } else {
+                if (currentSesi.limit > 0 && selectedPhotos.size >= currentSesi.limit) {
+                    showToast(`Batas pilihan (${currentSesi.limit}) tercapai!`);
+                    shakeCounter();
+                    return;
+                }
+                selectedPhotos.add(id);
+                spawnHearts(event.clientX, event.clientY);
+                trigger.classList.add('animate-love');
+                setTimeout(() => trigger.classList.remove('animate-love'), 400);
+            }
+            
+            renderGallery();
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const counter = document.getElementById('main-counter');
+            const total = memoryPhotos.length;
+            const chosen = selectedPhotos.size;
+            const limit = currentSesi.limit;
+            
+            counter.innerText = `❤️ ${chosen} / ${limit > 0 ? limit : total}`;
+            counter.classList.add('pop');
+            setTimeout(() => counter.classList.remove('pop'), 300);
+
+            if (limit > 0 && chosen >= limit) counter.classList.add('full');
+            else counter.classList.remove('full');
+
+            // FAB
+            const fab = document.getElementById('fab');
+            const fabBadge = document.getElementById('fab-count');
+            if (chosen > 0) {
+                fab.style.display = 'block';
+                fabBadge.innerText = chosen;
+            } else {
+                fab.style.display = 'none';
+            }
+        }
+
+        // --- Lightbox Functions ---
+        function openLightbox(idx) {
+            currentLightboxIndex = idx;
+            const p = memoryPhotos[idx];
+            const lb = document.getElementById('lightbox');
+            const img = document.getElementById('lightbox-img');
+            const btn = document.getElementById('lightbox-love-btn');
+            
+            img.src = p.src;
+            document.getElementById('lightbox-filename').innerText = p.name;
+            lb.style.display = 'flex';
+            
+            updateLightboxBtn();
+            
+            btn.onclick = (e) => {
+                toggleLove(p.id, e);
+                updateLightboxBtn();
+            };
+        }
+
+        function updateLightboxBtn() {
+            const p = memoryPhotos[currentLightboxIndex];
+            const btn = document.getElementById('lightbox-love-btn');
+            if (selectedPhotos.has(p.id)) {
+                btn.innerText = "✓ DIPILIH";
+                btn.classList.add('btn-outline');
+                btn.classList.remove('btn-love');
+            } else {
+                btn.innerText = "❤️ PILIH FOTO INI";
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-love');
+            }
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').style.display = 'none';
+        }
+
+        function navLightbox(dir) {
+            currentLightboxIndex = (currentLightboxIndex + dir + memoryPhotos.length) % memoryPhotos.length;
+            openLightbox(currentLightboxIndex);
+        }
+
+        // --- Confirmation ---
+        function openConfirmation() {
+            const modal = document.getElementById('confirm-modal');
+            const preview = document.getElementById('selected-list-preview');
+            const chosen = memoryPhotos.filter(p => selectedPhotos.has(p.id));
+            
+            preview.innerHTML = chosen.map((p, i) => `
+                <div style="font-size: 11px; margin-bottom: 5px; color: var(--text-secondary);">
+                    ${i+1}. ${p.name}
+                </div>
+            `).join('');
+            
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeConfirmation() {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 400);
+        }
+
+        function sendToFG() {
+            const clientName = document.getElementById('client-name').value;
+            if (!clientName) {
+                showToast("Tolong isi namamu ya!");
+                return;
+            }
+
+            const chosenFiles = memoryPhotos
+                .filter(p => selectedPhotos.has(p.id))
+                .map((p, i) => `${i+1}. ${p.name}`)
+                .join('\n');
+
+            const text = `Halo kak ${currentSesi.fg}! 👋\n\nIni daftar foto pilihan dari:\n👤 *${clientName}*\n📸 Sesi: *${currentSesi.name}*\n❤️ Total: *${selectedPhotos.size} foto*\n\nDaftar file:\n${chosenFiles}\n\nTerima kasih! 🙏\nDikirim via *FramePick*`;
+            
+            const encoded = encodeURIComponent(text);
+            window.open(`https://wa.me/${currentSesi.wa}?text=${encoded}`, '_blank');
+            
+            launchConfetti();
+        }
+
+        // --- Utilities ---
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+
+        function shakeCounter() {
+            const c = document.getElementById('main-counter');
+            c.classList.add('shake');
+            setTimeout(() => c.classList.remove('shake'), 400);
+        }
+
+        function spawnHearts(x, y) {
+            for (let i = 0; i < 8; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'particle-heart';
+                heart.innerText = '❤️';
+                heart.style.left = x + 'px';
+                heart.style.top = y + 'px';
+                heart.style.setProperty('--dx', (Math.random() - 0.5) * 150 + 'px');
+                heart.style.setProperty('--dy', (-80 - Math.random() * 100) + 'px');
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 1000);
+            }
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.display = 'block';
+
+            const particles = Array.from({ length: 100 }, () => ({
+                x: Math.random() * canvas.width,
+                y: -10,
+                color: ['#FF4D6D', '#C9A84C', '#FFFFFF'][Math.floor(Math.random()*3)],
+                v: 2 + Math.random() * 5,
+                a: 0.1,
+                r: Math.random() * 5
+            }));
+
+            function frame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.v;
+                    p.v += p.a;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                if (particles.some(p => p.y < canvas.height)) requestAnimationFrame(frame);
+                else canvas.style.display = 'none';
+            }
+            frame();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('lightbox').style.display === 'flex') {
+                if (e.key === 'ArrowLeft') navLightbox(-1);
+                if (e.key === 'ArrowRight') navLightbox(1);
+                if (e.key === 'Escape') closeLightbox();
+            }
+        });
+    </script>
+</body>
+</html>
